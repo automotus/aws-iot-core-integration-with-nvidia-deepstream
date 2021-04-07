@@ -83,7 +83,7 @@ NvDsMsgApiHandle nvds_msgapi_connect(char *connection_str, nvds_msgapi_connect_c
 	disconnect_cb = connect_cb;
 	if (config_path == NULL)
 	{
-		IOT_ERROR("Essensial args missing for function nvds_msgapi_connect\n");
+		IOT_ERROR("Essential args missing for function nvds_msgapi_connect\n");
 		return NULL;
 	}
 
@@ -142,7 +142,7 @@ NvDsMsgApiErrorType nvds_msgapi_disconnect(NvDsMsgApiHandle h_ptr)
 {
 	if ((h_ptr == NULL))
 	{
-		IOT_ERROR("Essensial args missing for function nvds_msgapi_disconnect\n");
+		IOT_ERROR("Essential args missing for function nvds_msgapi_disconnect\n");
 		return NVDS_MSGAPI_ERR;
 	}
 	IoT_Error_t rc = FAILURE;
@@ -180,7 +180,7 @@ NvDsMsgApiErrorType nvds_msgapi_send(NvDsMsgApiHandle conn, char *topic, const u
 {
 	if ((conn == NULL) || (topic == NULL) || (payload == NULL) || (nbuf == 0))
 	{
-		IOT_ERROR("Essensial args missing for function nvds_msgapi_send\n");
+		IOT_ERROR("Essential args missing for function nvds_msgapi_send\n");
 		return NVDS_MSGAPI_ERR;
 	}
 	AWS_IoT_Client *client = (AWS_IoT_Client *)conn;
@@ -217,7 +217,7 @@ NvDsMsgApiErrorType nvds_msgapi_send_async(NvDsMsgApiHandle h_ptr, char *topic, 
 {
 	if ((h_ptr == NULL) || (topic == NULL) || (payload == NULL) || (nbuf == 0))
 	{
-		IOT_ERROR("Essensial args missing for function nvds_msgapi_send: %d, %d, %d, %d\n", (h_ptr == NULL), (topic == NULL), (payload == NULL), (nbuf == 0));
+		IOT_ERROR("Essential args missing for function nvds_msgapi_send: %d, %d, %d, %d\n", (h_ptr == NULL), (topic == NULL), (payload == NULL), (nbuf == 0));
 		return NVDS_MSGAPI_ERR;
 	}
 	Work *work_node = g_malloc(sizeof(Work));
@@ -243,41 +243,32 @@ NvDsMsgApiErrorType nvds_msgapi_send_async(NvDsMsgApiHandle h_ptr, char *topic, 
 	return NVDS_MSGAPI_OK;
 }
 
-/* ************************************************************************* */
-// Subscribe def
-/* ************************************************************************* */
-
-void subscribe_callback_handler(AWS_IoT_Client *pClient, char *topicName, uint16_t topicNameLen,
-								IoT_Publish_Message_Params *params, void *pData)
-{
-	IOT_INFO("Subscribe callback");
-	IOT_INFO("%.*s\t%.*s", topicNameLen, topicName, (int)params->payloadLen, (char *)params->payload);
-}
-
 NvDsMsgApiErrorType nvds_msgapi_subscribe(NvDsMsgApiHandle h_ptr, char **topics, int num_topics, nvds_msgapi_subscribe_request_cb_t cb, void *user_ctx)
 {
 	IOT_INFO("Subscribe called\n");
 
 	if ((h_ptr == NULL) || (topics == NULL) || (num_topics <= 0))
 	{
-		IOT_ERROR("Essensial args missing for function nvds_msgapi_subscribe: %d, %d, %d\n", (h_ptr == NULL), (topics == NULL), (num_topics == NULL);
+		IOT_ERROR("Essential args missing for function nvds_msgapi_subscribe: %d, %d, %d\n", (h_ptr == NULL), (topics == NULL), (num_topics == NULL);
 		return NVDS_MSGAPI_ERR;
 	}
 	if (!cb)
 	{
-		IOT_ERROR("Callback function for nvds_msgapi_send cannot be NULL\n");
+		IOT_ERROR("Callback function for nvds_msgapi_subscribe cannot be NULL\n");
 		return NVDS_MSGAPI_ERR;
 	}
 	IoT_Error_t rc = FAILURE;
 	AWS_IoT_Client *client = (AWS_IoT_Client *)h_ptr;
-	rc = aws_iot_mqtt_subscribe(client, topics, strlen(topics), QOS0, subscribe_callback_handler, NULL);
-	if (SUCCESS != rc)
+	for (int i = 0; i < num_topics; i++)
 	{
-		IOT_ERROR("Unable to subscribe, error: %d\n", rc);
-		return NVDS_MSGAPI_ERR;
+		rc = aws_iot_mqtt_subscribe(client, topics[i], strlen(topics[i]), QOS0, cb, user_ctx);
+		if (SUCCESS != rc)
+		{
+			IOT_ERROR("Unable to subscribe, error: %d\n", rc);
+			return NVDS_MSGAPI_ERR;
+		}
 	}
 	IOT_INFO("Successfully subscribed");
-	g_free(client);
 	return NVDS_MSGAPI_OK;
 }
 
