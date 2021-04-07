@@ -256,7 +256,7 @@ void subscribe_callback_handler(AWS_IoT_Client *pClient, char *topicName, uint16
 
 NvDsMsgApiErrorType nvds_msgapi_subscribe(NvDsMsgApiHandle h_ptr, char **topics, int num_topics, nvds_msgapi_subscribe_request_cb_t cb, void *user_ctx)
 {
-	printf("Subscribe called\n");
+	IOT_INFO("Subscribe called\n");
 
 	if ((h_ptr == NULL) || (topics == NULL) || (num_topics <= 0))
 	{
