@@ -244,6 +244,44 @@ NvDsMsgApiErrorType nvds_msgapi_send_async(NvDsMsgApiHandle h_ptr, char *topic, 
 }
 
 /* ************************************************************************* */
+// Subscribe def
+/* ************************************************************************* */
+
+void subscribe_callback_handler(AWS_IoT_Client *pClient, char *topicName, uint16_t topicNameLen,
+								IoT_Publish_Message_Params *params, void *pData)
+{
+	IOT_INFO("Subscribe callback");
+	IOT_INFO("%.*s\t%.*s", topicNameLen, topicName, (int)params->payloadLen, (char *)params->payload);
+}
+
+NvDsMsgApiErrorType nvds_msgapi_subscribe(NvDsMsgApiHandle h_ptr, char **topics, int num_topics, nvds_msgapi_subscribe_request_cb_t cb, void *user_ctx)
+{
+	printf("Subscribe called\n");
+
+	if ((h_ptr == NULL) || (topics == NULL) || (num_topics <= 0))
+	{
+		IOT_ERROR("Essensial args missing for function nvds_msgapi_subscribe: %d, %d, %d\n", (h_ptr == NULL), (topics == NULL), (num_topics == NULL);
+		return NVDS_MSGAPI_ERR;
+	}
+	if (!cb)
+	{
+		IOT_ERROR("Callback function for nvds_msgapi_send cannot be NULL\n");
+		return NVDS_MSGAPI_ERR;
+	}
+	IoT_Error_t rc = FAILURE;
+	AWS_IoT_Client *client = (AWS_IoT_Client *)h_ptr;
+	rc = aws_iot_mqtt_subscribe(client, topics, strlen(topics), QOS0, subscribe_callback_handler, NULL);
+	if (SUCCESS != rc)
+	{
+		IOT_ERROR("Unable to subscribe, error: %d\n", rc);
+		return NVDS_MSGAPI_ERR;
+	}
+	IOT_INFO("Successfully subscribed");
+	g_free(client);
+	return NVDS_MSGAPI_OK;
+}
+
+/* ************************************************************************* */
 // Do Work function def
 /* ************************************************************************* */
 
@@ -277,7 +315,8 @@ void nvds_msgapi_do_work(NvDsMsgApiHandle h_ptr)
 		}
 		return;
 	}
-	while (! g_queue_is_empty(work_queue)){
+	while (!g_queue_is_empty(work_queue))
+	{
 		Work *work_node = (Work *)g_queue_pop_head(work_queue);
 		AWS_IoT_Client *client = (AWS_IoT_Client *)work_node->h_ptr;
 		rc = _mqtt_msg_send(client, work_node->topic, work_node->payload, work_node->payload_size);
@@ -291,7 +330,8 @@ void nvds_msgapi_do_work(NvDsMsgApiHandle h_ptr)
 			g_free(work_node);
 			return;
 		}
-		if (work_node->call_back_handler != NULL){
+		if (work_node->call_back_handler != NULL)
+		{
 			IOT_INFO("Pointer callback.");
 			work_node->call_back_handler(work_node->user_ptr, NVDS_MSGAPI_OK);
 		}
