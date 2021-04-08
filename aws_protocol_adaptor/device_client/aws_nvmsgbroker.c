@@ -41,6 +41,7 @@ static GMutex thread_mutex;
 static GQueue *work_queue;
 static struct timespec last_send_time_stamp;   // this is to make sure we send or yield frequent enough so we do not get disconnected.
 static nvds_msgapi_connect_cb_t disconnect_cb; // disconnect handler provided by connect thread
+static nvds_msgapi_subscribe_request_cb_t nvds_cb;
 
 /* ************************************************************************* */
 // Connect function def
@@ -243,10 +244,15 @@ NvDsMsgApiErrorType nvds_msgapi_send_async(NvDsMsgApiHandle h_ptr, char *topic, 
 	return NVDS_MSGAPI_OK;
 }
 
+void nvds_cb_wrapped(AWS_IoT_Client *pClient, char *pTopicName, uint16_t topicNameLen, IoT_Publish_Message_Params *pParams, void *pClientData)
+{
+	IOT_INFO("Subscribe callback");
+	nvds_cb(NVDS_MSGAPI_OK, pParams->payload, pParams->payloadLen, pTopicName, pClientData);
+}
+
 NvDsMsgApiErrorType nvds_msgapi_subscribe(NvDsMsgApiHandle h_ptr, char **topics, int num_topics, nvds_msgapi_subscribe_request_cb_t cb, void *user_ctx)
 {
 	IOT_INFO("Subscribe called\n");
-
 	if ((h_ptr == NULL) || (topics == NULL) || (num_topics <= 0))
 	{
 		IOT_ERROR("Essential args missing for function nvds_msgapi_subscribe: %d, %d, %d\n", (h_ptr == NULL), (topics == NULL), (num_topics == NULL);
@@ -257,11 +263,12 @@ NvDsMsgApiErrorType nvds_msgapi_subscribe(NvDsMsgApiHandle h_ptr, char **topics,
 		IOT_ERROR("Callback function for nvds_msgapi_subscribe cannot be NULL\n");
 		return NVDS_MSGAPI_ERR;
 	}
+	nvds_cb = cb;
 	IoT_Error_t rc = FAILURE;
 	AWS_IoT_Client *client = (AWS_IoT_Client *)h_ptr;
 	for (int i = 0; i < num_topics; i++)
 	{
-		rc = aws_iot_mqtt_subscribe(client, topics[i], strlen(topics[i]), QOS0, cb, user_ctx);
+		rc = aws_iot_mqtt_subscribe(client, topics[i], strlen(topics[i]), QOS0, nvds_cb_wrapped, user_ctx);
 		if (SUCCESS != rc)
 		{
 			IOT_ERROR("Unable to subscribe, error: %d\n", rc);
