@@ -33,6 +33,7 @@
 #include "aws_config_parser.h"
 #include "nvds_msgapi.h"
 #include "aws_nvmsgbroker.h"
+#define MAX_SUBSCRIPTIONS 50
 
 NvDsMsgApiHandle (*nvds_msgapi_connect_ptr)(char *connection_str, nvds_msgapi_connect_cb_t connect_cb, char *config_path);
 NvDsMsgApiErrorType (*nvds_msgapi_send_ptr)(NvDsMsgApiHandle conn, char *topic, const uint8_t *payload, size_t nbuf);
@@ -42,12 +43,15 @@ static GQueue *work_queue;
 static struct timespec last_send_time_stamp;   // this is to make sure we send or yield frequent enough so we do not get disconnected.
 static nvds_msgapi_connect_cb_t disconnect_cb; // disconnect handler provided by connect thread
 static nvds_msgapi_subscribe_request_cb_t nvds_cb;
+static char *subscribed_topics[MAX_SUBSCRIPTIONS];
+static size_t num_subscriptions = 0;
 
 /* ************************************************************************* */
 // Connect function def
 /* ************************************************************************* */
 
-static void disconnectCallbackHandler(AWS_IoT_Client *pClient, void *data)
+static void
+disconnectCallbackHandler(AWS_IoT_Client *pClient, void *data)
 {
 	IOT_WARN("MQTT Disconnect");
 	IoT_Error_t rc = FAILURE;
@@ -148,6 +152,17 @@ NvDsMsgApiErrorType nvds_msgapi_disconnect(NvDsMsgApiHandle h_ptr)
 	}
 	IoT_Error_t rc = FAILURE;
 	AWS_IoT_Client *client = (AWS_IoT_Client *)h_ptr;
+	for (int i = 0; i < num_subscriptions; i++)
+	{
+		rc = aws_iot_mqtt_unsubscribe(client, subscribed_topics[i], strlen(subscribed_topics[i]));
+		if (SUCCESS != rc)
+		{
+			IOT_ERROR("Unable to unsubscribe, error: %d\n", rc);
+			return NVDS_MSGAPI_ERR;
+		}
+	}
+	IOT_INFO("Successfully unsubscribed");
+
 	rc = aws_iot_mqtt_disconnect(client);
 	if (SUCCESS != rc)
 	{
@@ -274,6 +289,8 @@ NvDsMsgApiErrorType nvds_msgapi_subscribe(NvDsMsgApiHandle h_ptr, char **topics,
 			IOT_ERROR("Unable to subscribe, error: %d\n", rc);
 			return NVDS_MSGAPI_ERR;
 		}
+		subscribed_topics[i] = topics[i];
+		num_subscriptions++;
 	}
 	IOT_INFO("Successfully subscribed");
 	return NVDS_MSGAPI_OK;
