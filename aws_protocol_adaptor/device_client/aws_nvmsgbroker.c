@@ -33,18 +33,17 @@
 #include "aws_config_parser.h"
 #include "nvds_msgapi.h"
 #include "aws_nvmsgbroker.h"
-#define MAX_SUBSCRIPTIONS 50
 
 NvDsMsgApiHandle (*nvds_msgapi_connect_ptr)(char *connection_str, nvds_msgapi_connect_cb_t connect_cb, char *config_path);
 NvDsMsgApiErrorType (*nvds_msgapi_send_ptr)(NvDsMsgApiHandle conn, char *topic, const uint8_t *payload, size_t nbuf);
 NvDsMsgApiErrorType (*nvds_msgapi_disconnect_ptr)(NvDsMsgApiHandle h_ptr);
 static GMutex thread_mutex;
 static GQueue *work_queue;
-static struct timespec last_send_time_stamp;   // this is to make sure we send or yield frequent enough so we do not get disconnected.
-static nvds_msgapi_connect_cb_t disconnect_cb; // disconnect handler provided by connect thread
-static nvds_msgapi_subscribe_request_cb_t nvds_cb;
-static char *subscribed_topics[MAX_SUBSCRIPTIONS];
-static size_t num_subscriptions = 0;
+static struct timespec last_send_time_stamp;	   // this is to make sure we send or yield frequent enough so we do not get disconnected.
+static nvds_msgapi_connect_cb_t disconnect_cb;	   // disconnect handler provided by connect thread
+static nvds_msgapi_subscribe_request_cb_t nvds_cb; // msgapi subscribe callback handler
+static char *subscribed_topics[MAX_SUBSCRIPTIONS]; // to store the subscribed topics in order to be used during unsubscribe operation
+static size_t num_subscriptions = 0;			   // initializing the number of topics subscribed variable
 
 /* ************************************************************************* */
 // Connect function def
@@ -158,7 +157,6 @@ NvDsMsgApiErrorType nvds_msgapi_disconnect(NvDsMsgApiHandle h_ptr)
 		if (SUCCESS != rc)
 		{
 			IOT_ERROR("Unable to unsubscribe, error: %d\n", rc);
-			return NVDS_MSGAPI_ERR;
 		}
 	}
 	IOT_INFO("Successfully unsubscribed");
