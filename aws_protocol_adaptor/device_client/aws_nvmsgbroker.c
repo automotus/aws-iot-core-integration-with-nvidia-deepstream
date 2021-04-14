@@ -268,7 +268,7 @@ NvDsMsgApiErrorType nvds_msgapi_subscribe(NvDsMsgApiHandle h_ptr, char **topics,
 	IOT_INFO("Subscribe called\n");
 	if ((h_ptr == NULL) || (topics == NULL) || (num_topics <= 0))
 	{
-		IOT_ERROR("Essential args missing for function nvds_msgapi_subscribe: %d, %d, %d\n", (h_ptr == NULL), (topics == NULL), (num_topics == 0);
+		IOT_ERROR("Essential args missing for function nvds_msgapi_subscribe: %d, %d, %d\n", (h_ptr == NULL), (topics == NULL), (num_topics == 0));
 		return NVDS_MSGAPI_ERR;
 	}
 	if (!cb)
