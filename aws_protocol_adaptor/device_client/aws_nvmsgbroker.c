@@ -43,7 +43,7 @@ static struct timespec last_send_time_stamp; // this is to make sure we send or 
 static nvds_msgapi_connect_cb_t disconnect_cb; // disconnect handler provided by connect thread
 static nvds_msgapi_subscribe_request_cb_t nvds_cb; // msgapi subscribe callback handler
 static char *subscribed_topics[MAX_SUBSCRIPTIONS]; // to store the subscribed topics in order to be used during unsubscribe operation
-static size_t num_subscriptions = 0; // initializing the number of topics subscribed variable
+static size_t num_subscriptions = 0; // number of registered subscriptions
 
 /* ************************************************************************* */
 // Connect function def
