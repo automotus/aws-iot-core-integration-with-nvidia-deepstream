@@ -37,6 +37,9 @@
 NvDsMsgApiHandle (*nvds_msgapi_connect_ptr)(char *connection_str, nvds_msgapi_connect_cb_t connect_cb, char *config_path);
 NvDsMsgApiErrorType (*nvds_msgapi_send_ptr)(NvDsMsgApiHandle conn, char *topic, const uint8_t *payload, size_t nbuf);
 NvDsMsgApiErrorType (*nvds_msgapi_disconnect_ptr)(NvDsMsgApiHandle h_ptr);
+char* (*nvds_msgapi_getversion_ptr)();
+char* (*nvds_msgapi_get_protocol_name_ptr)(void);
+NvDsMsgApiErrorType (*nvds_msgapi_connection_signature_ptr)(char *connection_str, char *config_path, char *output_str, int max_len);
 static GMutex thread_mutex;
 static GQueue *work_queue;
 static struct timespec last_send_time_stamp; // this is to make sure we send or yield frequent enough so we do not get disconnected.
@@ -352,4 +355,14 @@ void nvds_msgapi_do_work(NvDsMsgApiHandle h_ptr)
 	}
 	last_send_time_stamp = current_time_stamp;
 	return;
+}
+
+char *nvds_msgapi_getversion()
+{
+  return (char *)NVDS_MSGAPI_VERSION;
+}
+
+char *nvds_msgapi_get_protocol_name()
+{
+  return (char *)NVDS_MSGAPI_PROTOCOL;
 }

@@ -36,6 +36,8 @@
 
 #define AWS_IOT_MAX_SEND_INTERVAL_SEC 120 ///< Have to yield every this amount of time before time-out disconnect
 #define MAX_SUBSCRIPTIONS 50
+#define NVDS_MSGAPI_VERSION 2.0
+#define NVDS_MSGAPI_PROTOCOL "AWS"
 
 // Thing Shadow specific configs
 #define SHADOW_MAX_SIZE_OF_RX_BUFFER (AWS_IOT_MQTT_RX_BUF_LEN + 1)                                       ///< Maximum size of the SHADOW buffer to store the received Shadow message, including terminating NULL byte.
