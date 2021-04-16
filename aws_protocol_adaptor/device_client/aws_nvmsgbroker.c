@@ -38,16 +38,16 @@
 NvDsMsgApiHandle (*nvds_msgapi_connect_ptr)(char *connection_str, nvds_msgapi_connect_cb_t connect_cb, char *config_path);
 NvDsMsgApiErrorType (*nvds_msgapi_send_ptr)(NvDsMsgApiHandle conn, char *topic, const uint8_t *payload, size_t nbuf);
 NvDsMsgApiErrorType (*nvds_msgapi_disconnect_ptr)(NvDsMsgApiHandle h_ptr);
-char* (*nvds_msgapi_getversion_ptr)();
-char* (*nvds_msgapi_get_protocol_name_ptr)(void);
+char *(*nvds_msgapi_getversion_ptr)();
+char *(*nvds_msgapi_get_protocol_name_ptr)(void);
 NvDsMsgApiErrorType (*nvds_msgapi_connection_signature_ptr)(char *connection_str, char *config_path, char *output_str, int max_len);
 static GMutex thread_mutex;
 static GQueue *work_queue;
-static struct timespec last_send_time_stamp; // this is to make sure we send or yield frequent enough so we do not get disconnected.
-static nvds_msgapi_connect_cb_t disconnect_cb; // disconnect handler provided by connect thread
+static struct timespec last_send_time_stamp;	   // this is to make sure we send or yield frequent enough so we do not get disconnected.
+static nvds_msgapi_connect_cb_t disconnect_cb;	   // disconnect handler provided by connect thread
 static nvds_msgapi_subscribe_request_cb_t nvds_cb; // msgapi subscribe callback handler
 static char *subscribed_topics[MAX_SUBSCRIPTIONS]; // to store the subscribed topics in order to be used during unsubscribe operation
-static size_t num_subscriptions = 0; // number of registered subscriptions
+static size_t num_subscriptions = 0;			   // number of registered subscriptions
 
 /* ************************************************************************* */
 // Connect function def
@@ -360,68 +360,77 @@ void nvds_msgapi_do_work(NvDsMsgApiHandle h_ptr)
 
 char *nvds_msgapi_getversion()
 {
-  return (char *)NVDS_MSGAPI_VERSION;
+	return (char *)NVDS_MSGAPI_VERSION;
 }
 
 char *nvds_msgapi_get_protocol_name()
 {
-  return (char *)NVDS_MSGAPI_PROTOCOL;
+	return (char *)NVDS_MSGAPI_PROTOCOL;
 }
 
-bool is_valid_connection_str(char *connection_str, char *&burl, char *&bport) 
+bool is_valid_connection_str(char *connection_str, char *&burl, char *&bport)
 {
-  if(connection_str == NULL) {
-    IOT_ERROR( "connection string cant be NULL");
-    return false;
-  }
-
-  string str(connection_str);
-  size_t n = count(str.begin(), str.end(), ';');
-  if(n>2) {
-    IOT_ERROR( "connection string format is invalid");
-    return false;
-  }
-
-  istringstream iss(connection_str);
-  getline(iss, burl, ';');
-  getline(iss, bport,';');
-
-  if(burl =="" || bport == "") {
-      IOT_ERROR("connection string is invalid. hostname or port is empty\n");
-      return false;
-  }
-  return true;
-}
-
-char *generate_sha256_hash(char *str) 
-{
-    unsigned char hashval[SHA256_DIGEST_LENGTH];
-    int len = SHA256_DIGEST_LENGTH * 2 + 1;
-    char res[len];
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, str, strlen(str));
-    SHA256_Final(hashval, &sha256);
-    for(int i=0; i<SHA256_DIGEST_LENGTH; i++) 
+	if (connection_str == NULL)
 	{
-        res + (i * 2), "%02x", hashval[i];
-    }
-    return res;
+		IOT_ERROR("connection string cant be NULL");
+		return false;
+	}
+
+	char conn_str[] = connection_str;
+	int i = 0;
+
+	char *token = strtok(conn_str, ";");
+	char *data[2];
+
+	while (token)
+	{
+		data[i++] = token;
+		token = strtok(NULL, ";");
+	}
+	for (i = 0; i < 2; i++)
+	{
+		printf("%s\n", data[i]);
+	}
+	char *burl = data[0];
+	char *bport = data[1];
+
+	if (burl == "" || bport == "")
+	{
+		IOT_ERROR("connection string is invalid. hostname or port is empty\n");
+		return false;
+	}
+	return true;
+}
+
+char *generate_sha256_hash(char *str)
+{
+	unsigned char hashval[SHA256_DIGEST_LENGTH];
+	int len = SHA256_DIGEST_LENGTH * 2 + 1;
+	char res[len];
+	SHA256_CTX sha256;
+	SHA256_Init(&sha256);
+	SHA256_Update(&sha256, str, strlen(str));
+	SHA256_Final(hashval, &sha256);
+	for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+	{
+		res + (i * 2), "%02x", hashval[i];
+	}
+	return res;
 }
 
 NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg, char *output_str, int max_len)
 {
-	strcpy(output_str,"");
-    if(broker_str == NULL || cfg == NULL) 
+	strcpy(output_str, "");
+	if (broker_str == NULL || cfg == NULL)
 	{
-        IOT_ERROR("nvds_msgapi_connection_signature: broker_str or cfg path cant be NULL\n");
-        return NVDS_MSGAPI_ERR;
+		IOT_ERROR("nvds_msgapi_connection_signature: broker_str or cfg path cant be NULL\n");
+		return NVDS_MSGAPI_ERR;
 	}
-	char burl="", bport="";
-    if(!is_valid_connection_str(broker_str, burl, bport))
-        return NVDS_MSGAPI_ERR;
+	char *burl = "", *bport = "";
+	if (!is_valid_connection_str(broker_str, burl, bport))
+		return NVDS_MSGAPI_ERR;
 
 	char *aws_connection_signature = generate_sha256_hash(burl + bport);
-    strcpy(output_str, aws_connection_signature);
-    return NVDS_MSGAPI_OK;
+	strcpy(output_str, aws_connection_signature);
+	return NVDS_MSGAPI_OK;
 }
