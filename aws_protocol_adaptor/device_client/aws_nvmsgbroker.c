@@ -33,6 +33,7 @@
 #include "aws_config_parser.h"
 #include "nvds_msgapi.h"
 #include "aws_nvmsgbroker.h"
+#include <openssl/sha.h>
 
 NvDsMsgApiHandle (*nvds_msgapi_connect_ptr)(char *connection_str, nvds_msgapi_connect_cb_t connect_cb, char *config_path);
 NvDsMsgApiErrorType (*nvds_msgapi_send_ptr)(NvDsMsgApiHandle conn, char *topic, const uint8_t *payload, size_t nbuf);
@@ -365,4 +366,63 @@ char *nvds_msgapi_getversion()
 char *nvds_msgapi_get_protocol_name()
 {
   return (char *)NVDS_MSGAPI_PROTOCOL;
+}
+
+bool is_valid_connection_str(char *connection_str, string &burl, string &bport) 
+{
+  if(connection_str == NULL) {
+    IOT_ERROR( "connection string cant be NULL");
+    return false;
+  }
+
+  string str(connection_str);
+  size_t n = count(str.begin(), str.end(), ';');
+  if(n>2) {
+    IOT_ERROR( "connection string format is invalid");
+    return false;
+  }
+
+  istringstream iss(connection_str);
+  getline(iss, burl, ';');
+  getline(iss, bport,';');
+
+  if(burl =="" || bport == "") {
+      IOT_ERROR("connection string is invalid. hostname or port is empty\n");
+      return false;
+  }
+  return true;
+}
+
+char *generate_sha256_hash(char *str) 
+{
+    unsigned char hashval[SHA256_DIGEST_LENGTH];
+    int len = SHA256_DIGEST_LENGTH * 2 + 1;
+    char res[len];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, str, strlen(str));
+    SHA256_Final(hashval, &sha256);
+    for(int i=0; i<SHA256_DIGEST_LENGTH; i++) {
+        printf(res + (i * 2), "%02x", hashval[i]);
+    }
+    return res;
+}
+
+NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg, char *output_str, int max_len)
+{
+	strcpy(output_str,"");
+
+    if(broker_str == NULL || cfg == NULL) 
+	{
+        IOT_ERROR("nvds_msgapi_connection_signature: broker_str or cfg path cant be NULL\n");
+        return NVDS_MSGAPI_ERR;
+	}
+
+	char burl="", bport="";
+    if(!is_valid_connection_str(broker_str, burl, bport))
+        return NVDS_MSGAPI_ERR;
+
+	char *aws_connection_signature = generate_sha256_hash(burl + bport);
+    strcpy(output_str, aws_connection_signature);
+    return NVDS_MSGAPI_OK;
 }
