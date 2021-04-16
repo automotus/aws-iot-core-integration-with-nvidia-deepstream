@@ -368,7 +368,7 @@ char *nvds_msgapi_get_protocol_name()
   return (char *)NVDS_MSGAPI_PROTOCOL;
 }
 
-bool is_valid_connection_str(char *connection_str, string &burl, string &bport) 
+bool is_valid_connection_str(char *connection_str, char *&burl, char *&bport) 
 {
   if(connection_str == NULL) {
     IOT_ERROR( "connection string cant be NULL");
@@ -402,8 +402,9 @@ char *generate_sha256_hash(char *str)
     SHA256_Init(&sha256);
     SHA256_Update(&sha256, str, strlen(str));
     SHA256_Final(hashval, &sha256);
-    for(int i=0; i<SHA256_DIGEST_LENGTH; i++) {
-        printf(res + (i * 2), "%02x", hashval[i]);
+    for(int i=0; i<SHA256_DIGEST_LENGTH; i++) 
+	{
+        res + (i * 2), "%02x", hashval[i];
     }
     return res;
 }
@@ -411,13 +412,11 @@ char *generate_sha256_hash(char *str)
 NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg, char *output_str, int max_len)
 {
 	strcpy(output_str,"");
-
     if(broker_str == NULL || cfg == NULL) 
 	{
         IOT_ERROR("nvds_msgapi_connection_signature: broker_str or cfg path cant be NULL\n");
         return NVDS_MSGAPI_ERR;
 	}
-
 	char burl="", bport="";
     if(!is_valid_connection_str(broker_str, burl, bport))
         return NVDS_MSGAPI_ERR;
