@@ -38,16 +38,14 @@
 NvDsMsgApiHandle (*nvds_msgapi_connect_ptr)(char *connection_str, nvds_msgapi_connect_cb_t connect_cb, char *config_path);
 NvDsMsgApiErrorType (*nvds_msgapi_send_ptr)(NvDsMsgApiHandle conn, char *topic, const uint8_t *payload, size_t nbuf);
 NvDsMsgApiErrorType (*nvds_msgapi_disconnect_ptr)(NvDsMsgApiHandle h_ptr);
-char *(*nvds_msgapi_getversion_ptr)();
-char *(*nvds_msgapi_get_protocol_name_ptr)(void);
 NvDsMsgApiErrorType (*nvds_msgapi_connection_signature_ptr)(char *connection_str, char *config_path, char *output_str, int max_len);
 static GMutex thread_mutex;
 static GQueue *work_queue;
-static struct timespec last_send_time_stamp;	   // this is to make sure we send or yield frequent enough so we do not get disconnected.
-static nvds_msgapi_connect_cb_t disconnect_cb;	   // disconnect handler provided by connect thread
+static struct timespec last_send_time_stamp; // this is to make sure we send or yield frequent enough so we do not get disconnected.
+static nvds_msgapi_connect_cb_t disconnect_cb; // disconnect handler provided by connect thread
 static nvds_msgapi_subscribe_request_cb_t nvds_cb; // msgapi subscribe callback handler
 static char *subscribed_topics[MAX_SUBSCRIPTIONS]; // to store the subscribed topics in order to be used during unsubscribe operation
-static size_t num_subscriptions = 0;			   // number of registered subscriptions
+static size_t num_subscriptions = 0; // number of registered subscriptions
 
 /* ************************************************************************* */
 // Connect function def
