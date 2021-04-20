@@ -366,8 +366,9 @@ char *nvds_msgapi_get_protocol_name()
 	return (char *)NVDS_MSGAPI_PROTOCOL;
 }
 
-bool is_valid_connection_str(char *connection_str, char *&burl, char *&bport)
+bool is_valid_connection_str(char *connection_str)
 {
+	char *burl = "", *bport = "";
 	if (connection_str == NULL)
 	{
 		IOT_ERROR("connection string cant be NULL");
@@ -389,8 +390,8 @@ bool is_valid_connection_str(char *connection_str, char *&burl, char *&bport)
 	{
 		printf("%s\n", data[i]);
 	}
-	char *burl = data[0];
-	char *bport = data[1];
+	burl = data[0];
+	bport = data[1];
 
 	if (burl == "" || bport == "")
 	{
@@ -411,7 +412,7 @@ char *generate_sha256_hash(char *str)
 	SHA256_Final(hashval, &sha256);
 	for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
 	{
-		res + (i * 2), "%02x", hashval[i];
+		sprintf(res + (i * 2), "%02x", hashval[i]);
 	}
 	return res;
 }
@@ -424,11 +425,14 @@ NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg
 		IOT_ERROR("nvds_msgapi_connection_signature: broker_str or cfg path cant be NULL\n");
 		return NVDS_MSGAPI_ERR;
 	}
-	char *burl = "", *bport = "";
-	if (!is_valid_connection_str(broker_str, burl, bport))
+	if(max_len < 2 * SHA256_DIGEST_LENGTH + 1) {
+        IOT_ERROR("nvds_msgapi_connection_signature: insufficient output string length. Atleast %d needed", 2 * SHA256_DIGEST_LENGTH + 1);
+        return NVDS_MSGAPI_ERR;
+    }
+	if (!is_valid_connection_str(broker_str))
+	{
 		return NVDS_MSGAPI_ERR;
-
-	char *aws_connection_signature = generate_sha256_hash(burl + bport);
-	strcpy(output_str, aws_connection_signature);
+	}
+	output_str = generate_sha256_hash(broker_str);
 	return NVDS_MSGAPI_OK;
 }
