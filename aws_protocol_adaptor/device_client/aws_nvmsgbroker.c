@@ -358,12 +358,12 @@ void nvds_msgapi_do_work(NvDsMsgApiHandle h_ptr)
 
 char *nvds_msgapi_getversion()
 {
-	return (char *)NVDS_MSGAPI_VERSION;
+	return NVDS_MSGAPI_VERSION;
 }
 
 char *nvds_msgapi_get_protocol_name()
 {
-	return (char *)NVDS_MSGAPI_PROTOCOL;
+	return NVDS_MSGAPI_PROTOCOL;
 }
 
 bool is_valid_connection_str(char *connection_str)
@@ -401,7 +401,7 @@ bool is_valid_connection_str(char *connection_str)
 	return true;
 }
 
-char *generate_sha256_hash(char *str)
+char *generate_sha256_hash(char *str, char *output_str)
 {
 	unsigned char hashval[SHA256_DIGEST_LENGTH];
 	int len = SHA256_DIGEST_LENGTH * 2 + 1;
@@ -419,20 +419,22 @@ char *generate_sha256_hash(char *str)
 
 NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg, char *output_str, int max_len)
 {
-	strcpy(output_str, "");
+	strcpy(output_str, ""); // Initializing output_str as empty string if successful which is updated later by SHA-256 hash else empty string is returned
+	int required_output_str_len = 2 * SHA256_DIGEST_LENGTH + 1  
 	if (broker_str == NULL || cfg == NULL)
 	{
 		IOT_ERROR("nvds_msgapi_connection_signature: broker_str or cfg path cant be NULL\n");
 		return NVDS_MSGAPI_ERR;
 	}
-	if(max_len < 2 * SHA256_DIGEST_LENGTH + 1) {
-        IOT_ERROR("nvds_msgapi_connection_signature: insufficient output string length. Atleast %d needed", 2 * SHA256_DIGEST_LENGTH + 1);
+	if (max_len < required_output_str_len) 
+	{
+        IOT_ERROR("nvds_msgapi_connection_signature: insufficient output string length. Atleast %d needed", required_output_str_len);
         return NVDS_MSGAPI_ERR;
     }
 	if (!is_valid_connection_str(broker_str))
 	{
 		return NVDS_MSGAPI_ERR;
 	}
-	output_str = generate_sha256_hash(broker_str);
+	output_str = generate_sha256_hash(broker_str, output_str);
 	return NVDS_MSGAPI_OK;
 }
