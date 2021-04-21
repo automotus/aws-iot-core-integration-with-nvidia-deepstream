@@ -432,7 +432,7 @@ NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg
 	{
         IOT_ERROR("nvds_msgapi_connection_signature: insufficient output string length. Atleast %d needed", required_output_str_len);
         return NVDS_MSGAPI_ERR;
-    }
+	}
 	if (!is_valid_connection_str(broker_str))
 	{
 		return NVDS_MSGAPI_ERR;
