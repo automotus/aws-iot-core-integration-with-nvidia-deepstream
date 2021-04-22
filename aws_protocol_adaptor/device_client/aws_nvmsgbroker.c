@@ -404,18 +404,15 @@ bool is_valid_connection_str(char *connection_str)
 char *generate_sha256_hash(char *output_str, char *str)
 {
 	unsigned char hashval[SHA256_DIGEST_LENGTH];
-	int len = SHA256_DIGEST_LENGTH * 2 + 1;
-	char res[len];
-	strcpy(res, output_str);
 	SHA256_CTX sha256;
 	SHA256_Init(&sha256);
 	SHA256_Update(&sha256, str, strlen(str));
 	SHA256_Final(hashval, &sha256);
 	for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
 	{
-		sprintf(res + (i * 2), "%02x", hashval[i]);
+		sprintf(output_str + (i * 2), "%02x", hashval[i]);
 	}
-	return res;
+	return output_str;
 }
 
 NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg, char *output_str, int max_len)
