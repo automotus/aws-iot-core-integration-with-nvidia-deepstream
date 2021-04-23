@@ -401,17 +401,37 @@ bool is_valid_connection_str(char *connection_str)
 	return true;
 }
 
-char *generate_sha256_hash(char *output_str, char *str)
+char *generate_sha256_hash(char *output_str, char *str, char *cfg)
 {
+	FILE *file = fopen(cfg, "rb");
+    if (!file) 
+	{
+		IOT_ERROR("Error opening file\n")
+		return NVDS_MSGAPI_ERR;
+	}
 	unsigned char hashval[SHA256_DIGEST_LENGTH];
 	SHA256_CTX sha256;
 	SHA256_Init(&sha256);
+	const int bufSize = 32768;
+    unsigned char *buffer = malloc(bufSize);
+    int bytes_read = 0;
+    if (!buffer) 
+	{
+		IOT_ERROR("Error message: %s\n", strerror(ENOMEM));
+		return NVDS_MSGAPI_ERR;
+	}
 	SHA256_Update(&sha256, str, strlen(str));
+	while ((bytes_read = fread(buffer, 1, bufSize, file)))
+    {
+        SHA256_Update(&sha256, buffer, bytes_read);
+    }
 	SHA256_Final(hashval, &sha256);
 	for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
 	{
 		sprintf(output_str + (i * 2), "%02x", hashval[i]);
 	}
+	fclose(file);
+    free(buffer);
 	return output_str;
 }
 
@@ -434,6 +454,6 @@ NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg
 	{
 		return NVDS_MSGAPI_ERR;
 	}
-	output_str = generate_sha256_hash(output_str, broker_str);
+	output_str = generate_sha256_hash(output_str, broker_str, cfg);
 	return NVDS_MSGAPI_OK;
 }
