@@ -404,7 +404,8 @@ bool is_valid_connection_str(char *connection_str)
 	return true;
 }
 
-int cfg_file_sha256(SHA256_CTX *sha256, char *cfg_path) {
+int cfg_file_sha256(SHA256_CTX *sha256, char *cfg_path) 
+{
 	FILE *file;
 	unsigned char buffer[SHA256_FILE_BUFLEN];
 	int bytes_read = 0;
@@ -424,7 +425,8 @@ int cfg_file_sha256(SHA256_CTX *sha256, char *cfg_path) {
 	read_err = ferror(file);
 	fclose(file);
 
-	if (read_err != 0) {
+	if (read_err != 0) 
+	{
 		IOT_ERROR("Reading configuration file failed with error code %d\n", read_err);
 		return read_err;
 	}
