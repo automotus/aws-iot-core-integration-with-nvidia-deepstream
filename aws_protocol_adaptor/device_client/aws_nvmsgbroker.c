@@ -372,7 +372,7 @@ char *nvds_msgapi_get_protocol_name()
 bool is_valid_connection_str(char *conn_str)
 {
 	char *burl = "", *bport = "";
-	if (connection_str == NULL)
+	if (conn_str == NULL)
 	{
 		IOT_ERROR("connection string cant be NULL");
 		return false;
