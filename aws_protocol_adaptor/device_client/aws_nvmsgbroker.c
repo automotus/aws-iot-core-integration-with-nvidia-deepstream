@@ -369,7 +369,7 @@ char *nvds_msgapi_get_protocol_name()
 	return NVDS_MSGAPI_PROTOCOL;
 }
 
-bool is_valid_connection_str(char *connection_str)
+bool is_valid_connection_str(char *conn_str)
 {
 	char *burl = "", *bport = "";
 	if (connection_str == NULL)
@@ -378,7 +378,6 @@ bool is_valid_connection_str(char *connection_str)
 		return false;
 	}
 
-	char conn_str[] = connection_str;
 	int i = 0;
 
 	char *token = strtok(conn_str, ";");
@@ -419,7 +418,7 @@ int cfg_file_sha256(SHA256_CTX *sha256, char *cfg_path)
 
 	while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)))
 	{
-		SHA256_Update(&sha256, buffer, bytes_read);
+		SHA256_Update(sha256, buffer, bytes_read);
 	}
 
 	read_err = ferror(file);
