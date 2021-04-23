@@ -35,6 +35,9 @@
 #include "aws_nvmsgbroker.h"
 #include <openssl/sha.h>
 
+#define SHA256_FILE_BUFLEN 32768
+#define SHA256_STRLEN SHA256_DIGEST_LENGTH * 2 + 1
+
 NvDsMsgApiHandle (*nvds_msgapi_connect_ptr)(char *connection_str, nvds_msgapi_connect_cb_t connect_cb, char *config_path);
 NvDsMsgApiErrorType (*nvds_msgapi_send_ptr)(NvDsMsgApiHandle conn, char *topic, const uint8_t *payload, size_t nbuf);
 NvDsMsgApiErrorType (*nvds_msgapi_disconnect_ptr)(NvDsMsgApiHandle h_ptr);
@@ -401,59 +404,84 @@ bool is_valid_connection_str(char *connection_str)
 	return true;
 }
 
-char *generate_sha256_hash(char *output_str, char *str, char *cfg)
+int cfg_file_sha256(SHA256_CTX *sha256, char *cfg_path) {
+	FILE *file;
+	unsigned char buffer[SHA256_FILE_BUFLEN];
+	int bytes_read = 0;
+	int read_err = 0;
+
+	if (!(file = fopen(cfg_path, "rb"))) 
+	{
+		IOT_ERROR("Failed to open configuration file %s\n", cfg_path);
+		return -1;
+	}
+
+	while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)))
+	{
+		SHA256_Update(&sha256, buffer, bytes_read);
+	}
+
+	read_err = ferror(file);
+	fclose(file);
+
+	if (read_err != 0) {
+		IOT_ERROR("Reading configuration file failed with error code %d\n", read_err);
+		return read_err;
+	}
+
+	return 0;
+}
+
+int generate_sha256_hash(char *output_str, char *conn_str, char *cfg_path)
 {
-	FILE *file = fopen(cfg, "rb");
-    if (!file) 
-	{
-		IOT_ERROR("Error opening file\n")
-		return NVDS_MSGAPI_ERR;
-	}
-	unsigned char hashval[SHA256_DIGEST_LENGTH];
 	SHA256_CTX sha256;
+	unsigned char hashval[SHA256_DIGEST_LENGTH];
+
 	SHA256_Init(&sha256);
-	const int bufSize = 32768;
-    unsigned char *buffer = malloc(bufSize);
-    int bytes_read = 0;
-    if (!buffer) 
+
+	SHA256_Update(&sha256, conn_str, strlen(conn_str));
+
+	if (cfg_file_sha256(&sha256, cfg_path) != 0)
 	{
-		IOT_ERROR("Error message: %s\n", strerror(ENOMEM));
-		return NVDS_MSGAPI_ERR;
+		IOT_ERROR("Failed to generate config file hash\n");
+		return -1;
 	}
-	SHA256_Update(&sha256, str, strlen(str));
-	while ((bytes_read = fread(buffer, 1, bufSize, file)))
-    {
-        SHA256_Update(&sha256, buffer, bytes_read);
-    }
+
 	SHA256_Final(hashval, &sha256);
 	for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
 	{
 		sprintf(output_str + (i * 2), "%02x", hashval[i]);
 	}
-	fclose(file);
-    free(buffer);
-	return output_str;
+
+	return 0;
 }
 
 NvDsMsgApiErrorType nvds_msgapi_connection_signature(char *broker_str, char *cfg, char *output_str, int max_len)
 {
 	// Value of output_str must be empty string if operation is unsuccessful
 	strcpy(output_str, ""); 
-	int required_output_str_len = 2 * SHA256_DIGEST_LENGTH + 1  
+
 	if (broker_str == NULL || cfg == NULL)
 	{
-		IOT_ERROR("nvds_msgapi_connection_signature: broker_str or cfg path cant be NULL\n");
+		IOT_ERROR("Must specify broker_str and cfg\n");
 		return NVDS_MSGAPI_ERR;
 	}
-	if (max_len < required_output_str_len) 
+
+	if (max_len < SHA256_STRLEN) 
 	{
-        IOT_ERROR("nvds_msgapi_connection_signature: insufficient output string length. Atleast %d needed", required_output_str_len);
-        return NVDS_MSGAPI_ERR;
+		IOT_ERROR("Insufficient output string length. Need %d, got %d", SHA256_STRLEN, max_len);
+		return NVDS_MSGAPI_ERR;
 	}
+
 	if (!is_valid_connection_str(broker_str))
 	{
 		return NVDS_MSGAPI_ERR;
 	}
-	output_str = generate_sha256_hash(output_str, broker_str, cfg);
+
+	if (generate_sha256_hash(output_str, broker_str, cfg) != 0)
+	{
+		return NVDS_MSGAPI_ERR;
+	}
+
 	return NVDS_MSGAPI_OK;
 }
