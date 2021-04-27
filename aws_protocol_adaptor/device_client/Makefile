@@ -61,6 +61,9 @@ EXTERNAL_LIBS += -L$(TLS_LIB_DIR)
 LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
 LD_FLAG += -ldl $(TLS_LIB_DIR)/libmbedtls.a $(TLS_LIB_DIR)/libmbedcrypto.a $(TLS_LIB_DIR)/libmbedx509.a -lpthread
 
+# SSL Libs
+SSL_LIBS = -l:libssl.a -l:libcrypto.a
+
 # GLibs
 DP_SOURCE_DIR = ../../..
 NVDS_VERSION:=4.0
@@ -98,7 +101,7 @@ MAKE_OBJ_CMD = $(CC) -c -fPIC $(SRC_FILES) $(COMPILER_FLAGS) $(LD_FLAG) $(EXTERN
 
 OBJS:=./*.o
 TLS_OBJS=$(TLS_LIB_DIR)/*.o
-MAKE_LIB_CMD = $(CC) -shared -fPIC -o libnvds_aws_proto.so $(OBJS) $(TLS_OBJS) ${LIBS}
+MAKE_LIB_CMD = $(CC) -shared -fPIC -o libnvds_aws_proto.so $(OBJS) $(TLS_OBJS) $(SSL_LIBS) ${LIBS}
 MAKE_TEST_CMD = $(CC) $(SRC_FILES) $(APP_SRC_FILES) $(COMPILER_FLAGS) $(LD_FLAG) $(EXTERNAL_LIBS) $(INCLUDE_ALL_DIRS) $(LIBS) -o $(APP_NAME)
 
 all:
